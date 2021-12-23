@@ -4,6 +4,7 @@ import "quill/dist/quill.snow.css";
 import "./styles.css";
 
 import {io} from "socket.io-client";
+import {useParams} from "react-router-dom";
 
 const TOOLBAR_OPTIONS = [
 	[{header: [1, 2, 3, 4, 5, 6, false]}],
@@ -18,6 +19,7 @@ const TOOLBAR_OPTIONS = [
 ];
 
 export default function TextEditor() {
+	const {id: documentId} = useParams();
 	const [socket, setSocket] = useState(null);
 	const [quill, setQuill] = useState(null);
 
@@ -29,6 +31,16 @@ export default function TextEditor() {
 			s.disconnect();
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!socket || !quill) return;
+
+		socket.once("load-document", (document) => {
+			quill.setContents(document);
+			quill.enable();
+		});
+		socket.emit("get-document", documentId);
+	}, [socket, quill, documentId]);
 
 	useEffect(() => {
 		if (!socket || !quill) return;
@@ -70,6 +82,8 @@ export default function TextEditor() {
 				toolbar: TOOLBAR_OPTIONS,
 			},
 		});
+		q.disable();
+		q.setText("Loading...");
 		setQuill(q);
 	}, []);
 
