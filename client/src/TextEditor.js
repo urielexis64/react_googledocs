@@ -6,6 +6,8 @@ import "./styles.css";
 import {io} from "socket.io-client";
 import {useParams} from "react-router-dom";
 
+const SAVE_INTERVAL_MS = 2000;
+
 const TOOLBAR_OPTIONS = [
 	[{header: [1, 2, 3, 4, 5, 6, false]}],
 	[{font: []}],
@@ -45,6 +47,18 @@ export default function TextEditor() {
 	useEffect(() => {
 		if (!socket || !quill) return;
 
+		const interval = setInterval(() => {
+			socket.emit("save-document", quill.getContents());
+		}, SAVE_INTERVAL_MS);
+
+		return () => {
+			clearInterval(interval);
+		};
+	}, [socket, quill]);
+
+	useEffect(() => {
+		if (!socket || !quill) return;
+
 		const handler = (delta) => {
 			quill.updateContents(delta);
 		};
@@ -73,6 +87,7 @@ export default function TextEditor() {
 
 	const wrapperRef = useCallback((wrapper) => {
 		if (!wrapper) return;
+
 		wrapper.innerHTML = "";
 		const editor = document.createElement("div");
 		wrapper.append(editor);
